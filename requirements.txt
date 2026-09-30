@@ -1,0 +1,5 @@
+pytest>=8.0
+
+# Optional — only needed if you use LLMPlanner instead of the default
+# HeuristicPlanner. Requires ANTHROPIC_API_KEY to be set.
+anthropic>=0.40
