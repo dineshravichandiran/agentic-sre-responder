@@ -27,6 +27,7 @@ class Step:
 class Transcript:
     steps: list[Step] = field(default_factory=list)
     verdict: Verdict | None = None
+    guardrail_blocks: int = 0
 
     def print(self) -> None:
         for i, step in enumerate(self.steps, start=1):
@@ -52,6 +53,7 @@ class IncidentResponder:
             try:
                 self.guardrails.check(action)
             except GuardrailViolation as violation:
+                transcript.guardrail_blocks += 1
                 result = tools.escalate(str(violation))
                 transcript.steps.append(Step(Action(ActionType.ESCALATE, reason=str(violation)), result))
                 transcript.verdict = Verdict.ESCALATED
