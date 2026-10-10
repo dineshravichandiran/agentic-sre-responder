@@ -2,6 +2,7 @@
 
     python -m evals.run --agent heuristic          # rule-based baseline, no key needed
     python -m evals.run --agent llm                # live LLM tool-calling agent (needs ANTHROPIC_API_KEY)
+    python -m evals.run --agent claude             # Claude via the Claude Code CLI (no API key; uses your plan)
 
 A scenario only passes if ALL of these hold:
   * the final verdict matches what a careful engineer would reach
@@ -21,6 +22,7 @@ from typing import Any, Callable, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent.agent import IncidentResponder  # noqa: E402
+from agent.claude_cli_client import ClaudeCLIClient  # noqa: E402
 from agent.llm_agent import DEFAULT_MODEL, LLMToolAgent, make_anthropic_client  # noqa: E402
 from agent.planner import HeuristicPlanner  # noqa: E402
 from agent.scenarios import SCENARIOS, Scenario, build_environment  # noqa: E402
@@ -101,7 +103,7 @@ def format_table(outcomes: list) -> str:
 
 def main(argv: Optional[list] = None, client: Any = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--agent", choices=["heuristic", "llm"], default="heuristic")
+    parser.add_argument("--agent", choices=["heuristic", "llm", "claude"], default="heuristic")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--json", help="also write the full results to this file")
     args = parser.parse_args(argv)
@@ -109,6 +111,9 @@ def main(argv: Optional[list] = None, client: Any = None) -> int:
     if args.agent == "heuristic":
         runner = run_heuristic
         label = "HeuristicPlanner (rule-based baseline)"
+    elif args.agent == "claude":
+        runner = make_llm_runner(client or ClaudeCLIClient(), args.model)
+        label = f"LLMToolAgent ({args.model} via Claude Code CLI, structured-output tool selection)"
     else:
         runner = make_llm_runner(client or make_anthropic_client(), args.model)
         label = f"LLMToolAgent ({args.model})"
